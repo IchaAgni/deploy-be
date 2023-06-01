@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ada</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Login</h1>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+    <div class="dashboard-container" style="display: none;">
+        <h1>Dashboard</h1>
+        <p>Welcome, <span id="user-name"></span>!</p>
+        <div id="notes-container"></div>
+        <button id="logout-btn" class="btn btn-danger">Logout</button>
+    </div>
+
+    <script>
+        const loginForm = document.querySelector('#login-form')
+        const dashboardContainer = document.querySelector('.dashboard-container')
+        const logoutBtn = document.querySelector('#logout-btn')
+        const userID = document.getElementById('user-name')
+
+        // Function to check if user is logged in
+        const checkLoggedIn = async () => {
+            const token = localStorage.getItem('token')
+
+            if (token) {
+                // Check if token is valid
+                const response = await fetch('http://localhost:3000/notes', {
+                    headers: { 'Authorization': token }
+                })
+                if (response.ok) {
+                    dashboardContainer.style.display = 'block'
+                    showNotes(token)
+                } else {
+                    localStorage.removeItem('token')
+                }
+            }
+        }
+
+        // Call checkLoggedIn on page load
+        checkLoggedIn()
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault()
+
+            const username = loginForm.username.value
+            const password = loginForm.password.value
+
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+
+            if (response.ok) {
+                const { message, token, username } = await response.json()
+                localStorage.setItem('token', token)
+                userID.innerHTML = username
+                console.log(message)
+                showNotes(token)
+            } else {
+                const { message } = await response.json()
+                alert(message)
+            }
+        })
+
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('token')
+            dashboardContainer.style.display = 'none'
+            document.getElementById('notes-container').innerHTML = ''
+        })
+
+    </script>
+</body>
+
+</html>
